@@ -1,0 +1,172 @@
+"""
+Traffic AI - FULL WORKING PROJECT (Upload + Video Fix)
+Run: python setup_project.py
+"""
+
+import pathlib
+
+FILES = {}
+
+# ===================== requirements =====================
+FILES["requirements.txt"] = """Flask
+opencv-python
+numpy
+ultralytics
+"""
+
+# ===================== detector =====================
+FILES["modules/detector.py"] = """import cv2
+from ultralytics import YOLO
+
+class VehicleDetector:
+    def __init__(self):
+        self.model = YOLO("yolov8n.pt")
+
+    def detect(self, frame):
+        results = self.model(frame)[0]
+        count = 0
+
+        if results.boxes is not None:
+            for box in results.boxes.xyxy:
+                x1, y1, x2, y2 = map(int, box)
+                cv2.rectangle(frame, (x1,y1),(x2,y2),(0,255,0),2)
+                count += 1
+
+        return frame, count
+"""
+
+# ===================== video =====================
+FILES["modules/video_stream.py"] = """import cv2
+
+class VideoStream:
+    def __init__(self, source):
+        self.cap = cv2.VideoCapture(source)
+
+        if not self.cap.isOpened():
+            print("❌ Cannot open video")
+
+    def read(self):
+        if self.cap is None:
+            return None
+
+        ret, frame = self.cap.read()
+
+        if not ret:
+            self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+            return None
+
+        return frame
+"""
+
+# ===================== signal =====================
+FILES["modules/signal_controller.py"] = """class SignalController:
+    def get_green_time(self, vehicles):
+        return min(60, 10 + vehicles * 2)
+"""
+
+FILES["modules/__init__.py"] = ""
+
+# ===================== app =====================
+FILES["app.py"] = """from flask import Flask, render_template, Response, request, redirect
+import os
+import cv2
+
+from modules.detector import VehicleDetector
+from modules.video_stream import VideoStream
+from modules.signal_controller import SignalController
+
+app = Flask(__name__)
+
+detector = VehicleDetector()
+stream = VideoStream(0)
+controller = SignalController()
+
+UPLOAD_FOLDER = "uploads"
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+def generate():
+    global stream
+    while True:
+        frame = stream.read()
+
+        if frame is None:
+            continue
+
+        frame, count = detector.detect(frame)
+        green_time = controller.get_green_time(count)
+
+        cv2.putText(frame, f"Vehicles: {count}", (10,30),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2)
+        cv2.putText(frame, f"Green Time: {green_time}s", (10,70),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0,255,0), 2)
+
+        _, buffer = cv2.imencode('.jpg', frame)
+        yield (b'--frame\\r\\nContent-Type: image/jpeg\\r\\n\\r\\n' + buffer.tobytes() + b'\\r\\n')
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/video')
+def video():
+    return Response(generate(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+@app.route('/upload', methods=['POST'])
+def upload():
+    global stream
+
+    file = request.files['video']
+    if file.filename == '':
+        return "No file selected"
+
+    filepath = os.path.join(UPLOAD_FOLDER, file.filename)
+    file.save(filepath)
+
+    stream = VideoStream(filepath)
+
+    return redirect('/')
+
+if __name__ == "__main__":
+    app.run(debug=True)
+"""
+
+# ===================== HTML =====================
+FILES["templates/index.html"] = """<!DOCTYPE html>
+<html>
+<head>
+<title>Traffic AI</title>
+</head>
+<body>
+
+<h2>Upload Traffic Video</h2>
+
+<form action="/upload" method="post" enctype="multipart/form-data">
+  <input type="file" name="video">
+  <input type="submit">
+</form>
+
+<br><br>
+
+<h3>Live Output</h3>
+<img src="/video" width="700">
+
+</body>
+</html>
+"""
+
+# ===================== MAIN =====================
+def main():
+    for path, content in FILES.items():
+        p = pathlib.Path(path)
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(content, encoding="utf-8")
+        print("Created:", path)
+
+    print("\\n✅ DONE! Now run:")
+    print("python -m venv .venv")
+    print(".venv\\Scripts\\activate")
+    print("pip install -r requirements.txt")
+    print("python app.py")
+
+if __name__ == "__main__":
+    main()
