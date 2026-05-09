@@ -20,7 +20,7 @@ Real-time traffic detection and management system using YOLOv8, OpenCV, and Pyth
 ## Installation
 
 Clone the repository:
-git clone https://github.com/deshrajvermay9517/traffic-detection-Yolov8.git
+git clone https://github.com/deshrajvermay9517-png/traffic-detection-Yolov8.git
 
 Install dependencies:
 pip install -r requirements.txt
