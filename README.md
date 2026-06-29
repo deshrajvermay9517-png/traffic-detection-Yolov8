@@ -4,6 +4,10 @@ Real-time traffic detection and management system using YOLO and OpenCV.
 
 Real-time traffic detection and management system using YOLOv8, OpenCV, and Python.
 
+## Video Demo
+
+[Watch Demo Video](uploads/intelligent%20traffic%20management%20video%20demo.mp4)
+
 ## Features
 - Vehicle detection using YOLOv8
 - Real-time traffic monitoring
