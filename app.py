@@ -1,4 +1,5 @@
-from flask import Flask, render_template, Response, request, redirect
+from flask import Flask, render_template, Response, request, redirect, jsonify
+from werkzeug.utils import secure_filename
 import os
 import cv2
 
@@ -36,7 +37,7 @@ def generate():
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('index.html', uploaded_files=os.listdir(UPLOAD_FOLDER))
 
 @app.route('/video')
 def video():
@@ -56,6 +57,31 @@ def upload():
     stream = VideoStream(filepath)
 
     return redirect('/')
+
+
+@app.route('/uploads')
+def uploads():
+    files = os.listdir(UPLOAD_FOLDER)
+    return jsonify(files)
+
+@app.route('/select_upload', methods=['POST'])
+def select_upload():
+    global stream
+    fname = secure_filename(request.form.get('filename', ''))
+    filepath = os.path.join(UPLOAD_FOLDER, fname)
+    if not os.path.isfile(filepath):
+        return jsonify({'error': 'not found'}), 404
+    stream = VideoStream(filepath)
+    return jsonify({'status': 'ok'}), 200
+
+@app.route('/delete_upload', methods=['POST'])
+def delete_upload():
+    fname = secure_filename(request.form.get('filename', ''))
+    filepath = os.path.join(UPLOAD_FOLDER, fname)
+    if not os.path.isfile(filepath):
+        return jsonify({'error': 'not found'}), 404
+    os.remove(filepath)
+    return jsonify({'status': 'deleted'}), 200
 
 if __name__ == "__main__":
     app.run(debug=True)

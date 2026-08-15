@@ -14,6 +14,21 @@
 
 <br><br>
 
+<h3>Uploaded videos</h3>
+<ul>
+{% for f in uploaded_files %}
+  <li>{{ f }}
+    <form action="/select_upload" method="post" style="display:inline">
+      <input type="hidden" name="filename" value="{{ f }}">
+      <button type="submit">Play</button>
+    </form>
+    <form action="/delete_upload" method="post" style="display:inline" onsubmit="return confirm('Delete {{ f }}?')">
+      <input type="hidden" name="filename" value="{{ f }}">
+      <button type="submit">Delete</button>
+    </form>
+  </li>
+{% endfor %}
+</ul>
 <h3>Live Output</h3>
 <img src="/video" width="700">
 
