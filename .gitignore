@@ -2,4 +2,10 @@ venv/
 .venv/
 __pycache__/
 *.pyc
+*.pyo
 uploads/
+*.pt
+.env
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
